@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JS Tetris by DeltaCoderr</title>
+<style>
+/* CSS styles */
+body {
+  background-color: #222222;
+  background: repeating-linear-gradient(45deg, #2b2b2b 0%, #2b2b2b 10%, #222222 0%, #222222 50%) 0 / 15px 15px;
+  position: relative;
+}
+/* End of CSS styles */
+#game_screen {
+    width: 434px;
+    margin: 0px 0px;
+    padding: 0px;
+}
+#game_box {
+    width: 436px;
+    padding: 0px 0px;
+    margin: 0px 0px 0px auto;
+    float: left;
+}
+#container {
+  width: 500px;
+  margin: auto;
+}
+p {
+  text-align: center;
+  font-size: 3em;
+  margin: 20px 0 20px 0;
+}
+a {
+  text-decoration: none;
+  -webkit-transition: all 0.5s;
+  -moz-transition: all 0.5s;
+  transition: all 0.5s;
+}
+#instructions {
+    font-family: "Open Sans", sans-serif;
+    float: right;
+    width: 350px;
+    margin: 30px auto 0px 0px;
+    color : #FFF;
+}
+#screen {
+    width: 900px;
+    margin: 0px auto;
+}
+.btn {
+  position: absolute;
+  top: 20px;
+  right: 90px;
+}
+.btn a {
+  padding: 30px 20px 30px 20px;
+  font-family: "Open Sans", sans-serif;
+  font-size: 2em;
+}
+/* Add styles for Tetrominoes */
+.tetromino {
+  width: 24px;
+  height: 24px;
+}
+
+/* Define colors for Tetrominoes */
+.tetromino-O {
+  background-color: #F44336; /* Red */
+}
+
+.tetromino-I {
+  background-color: #2196F3; /* Blue */
+}
+
+.tetromino-T {
+  background-color: #FFEB3B; /* Yellow */
+}
+
+.tetromino-J {
+  background-color: #FF5722; /* Orange */
+}
+
+.tetromino-L {
+  background-color: #9C27B0; /* Purple */
+}
+
+.tetromino-S {
+  background-color: #4CAF50; /* Green */
+}
+
+.tetromino-Z {
+  background-color: #FFC107; /* Amber */
+}
+
+</style>
+</head>
+<body onkeydown="storeKey(event)">
+
+<div id="screen">
+    <div id="game_box">
+        <div id="game_screen">
+            <div id="container">
+                <p>
+                    <a href="#">Tetris</a>
+                </p>
+            </div>
+            <canvas id="canvas" width="432" height="528" style="border:0px solid #000000;"></canvas>
+        </div>
+    </div>
+
+    <div id="instructions">
+        <h1>Instructions.</h1>
+        <ul>
+            <li><b>UP ARROW</b> = Rotate Tetromino.</li>
+            <li><b>LEFT ARROW</b> = Tetromino Left.</li>
+            <li><b>RIGHT ARROW</b> = Tetromino Right.</li>
+            <li><b>DOWN ARROW</b> = Tetromino down one spot.</li>
+            <li><b>SPACE BAR</b> = Send Tetrominoe to the bottom.</li>
+            <li><b><span id="score">SCORE: 0.</span></b></li>
+        </ul>
+    </div>
+</div>
+
+<script>
+// JavaScript code
+var fps = 7.5;
+var W = 432;
+var H = 528;
+var X = 0;
+var Y = 0;
+ITER = 0;
+
+var canvas = document.getElementById("canvas");
+var ctx = canvas.getContext("2d");
+ctx.fillStyle = "#000000";
+ctx.fillRect(0, 0, 432, 528);
+
+var canvasData = ctx.getImageData(0, 0, 432, 528);
+ctx.putImageData(canvasData, 0, 0);
+
+var gameStatus = {
+    points: 0,
+    fps: 7.5,
+    boardW: 432,
+    boardH: 528
+}
+
+var keyPresses = [0];
+
+var storedFunctions = [];
+
+var tetro = {
+    position: { x: (W - 48) / 2, y: 0 }
+};
+
+// All possible pieces the player can use
+var tetroO = [[12, 0], [36, 0], [12, 24], [36, 24]]; // O Tetromino
+
+// The piece the player is holding right now
+var currTetro = tetroO;
+
+function rotateTetro() { // Rotates the tetro piece that the player is controlling
+    var rotatedTetro = [];
+    for (var i = 0; i < currTetro.length; i++) {
+        var newX = currTetro[i][1];
+        var newY = -(currTetro[i][0] - 36) + 36;
+        rotatedTetro.push([newX, newY]);
+    }
+    currTetro = rotatedTetro;
+}
+
+function drawCanvas() { // Draws the canvas with the last frame data
+    ctx.putImageData(canvasData, 0, 0);
+}
+
+function copyCanvas() { // Copies to a variable the canvas the data had
+    canvasData = ctx.getImageData(0, 0, 432, 528);
+}
+
+function drawTetro(tetro, xpos, ypos) { // Draws the tetro in the canvas
+    for (var i = 0; i < tetro.length; i++) {
+        ctx.fillStyle = "#ffffff"; // White color for Tetrominoes
+        ctx.fillRect(tetro[i][0] + xpos, tetro[i][1] + ypos, 24, 24);
+    }
+}
+
+function detectCollision() { // Detect if the piece has colided with another piece or the bottom
+    if (tetro.position.y + 96 == H || (currTetro.some(([x, y]) => ctx.getImageData(tetro.position.x + x, tetro.position.y + y + 24, 1, 1).data[0] !== 0))) {
+        rowCheck();
+        resetTetro();
+        copyCanvas();
+        ITER = 0;
+    }
+}
+
+function rowCheck() { // Checks all the rows
+    // Row checking logic here...
+}
+
+function clearRow(row) { // Clears a row
+    // Row clearing logic here...
+}
+
+function resetTetro() { // After the tetro is place
+    tetro.position.y = 0; // Move to the starting y
+    currTetro = tetroO; // Get a new tetro
+}
+
+function moveTetro(direction) { // Move the tetro in a certain direction
+    switch (direction) {
+        case "left":
+            if (tetro.position.x != 12) {
+                tetro.position.x -= 24;
+            }
+            break;
+        case "right":
+            if (tetro.position.x != 384) {
+                tetro.position.x += 24;
+            }
+            break;
+        case "down":
+            if (tetro.position.y + 96 != 504) {
+                tetro.position.y += 24;
+            }
+            break;
+    }
+}
+
+function draw() { // Draw function
+    if (ITER == 0) {
+        copyCanvas();
+    }
+    if (ITER % 30 == 0) { // Every second
+        detectCollision();
+        ctx.clearRect(0, 0, W, H);
+        drawCanvas();
+        drawTetro(currTetro, tetro.position.x, tetro.position.y); // Draw the tetro
+        tetro.position.y += 24; // Move tetro down one spot
+    }
+    ITER++;
+    requestAnimationFrame(draw);
+}
+
+function storeKey(event) { // Stores the keys pressed
+    keyPresses.push(event.keyCode);
+    switch (keyPresses[keyPresses.length - 1]) {
+        case 37:
+            moveTetro("left");
+            break;
+        case 39:
+            moveTetro("right");
+            break;
+        case 38:
+            rotateTetro();
+            break;
+        case 40:
+            moveTetro("down");
+            break;
+        case 32:
+            while (tetro.position.y + 96 != 504) { // While the piece has not hit bottom
+                tetro.position.y += 24; // Move the piece down
+                drawTetro(currTetro, tetro.position.x, tetro.position.y); // Redraw the piece
+                copyCanvas();
+            }
+            break;
+    }
+}
+draw();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cube Drop</title>
+    <style>
+        /* Add your CSS styles here */
+        canvas {
+            border: 1px solid black;
+            display: block;
+            margin: 0 auto;
+        }
+        .game-over, .start-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+        }
+        .start-button, .restart-button {
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cube Drop</h1>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div class="start-screen" id="startScreen">
+        <h2>Welcome to Cube Drop!</h2>
+        <p>Press Start to play.</p>
+        <button class="start-button" onclick="startGame()">Start</button>
+    </div>
+    <div class="game-over" id="gameOver">
+        <p id="gameOverText"></p>
+        <button class="restart-button" onclick="restartGame()">Restart</button>
+    </div>
+
+<script>
+    let canvas = document.getElementById('gameCanvas');
+    let ctx = canvas.getContext('2d');
+    let player = { x: 400, y: 500, width: 53, height: 53 };
+    let enemySize = 53;
+    let enemies = [];
+    let score = 0;
+    let speed = 20; // Decreased speed
+    let gameover = true; // Start with gameover state
+
+    // Game over screen
+    let gameOverScreen = document.getElementById('gameOver');
+    let gameOverText = document.getElementById('gameOverText');
+
+    // Start screen
+    let startScreen = document.getElementById('startScreen');
+
+    // Function to move player with borders
+    function movePlayer(direction) {
+        const moveSpeed = 10; // Decreased movement speed
+        if (direction === 'left') {
+            player.x = Math.max(0, player.x - moveSpeed); // Ensure player doesn't move beyond the left border
+        } else if (direction === 'right') {
+            player.x = Math.min(canvas.width - player.width, player.x + moveSpeed); // Ensure player doesn't move beyond the right border
+        }
+    }
+
+    // Event listener for Xbox controller input
+    window.addEventListener('gamepadconnected', function(e) {
+        let gamepad = e.gamepad;
+        console.log('Gamepad connected at index %d: %s. %d buttons, %d axes.',
+                        gamepad.index, gamepad.id,
+                        gamepad.buttons.length, gamepad.axes.length);
+        checkGamepadState();
+    });
+
+    // Event listener for keyboard input
+    document.addEventListener('keydown', function(event) {
+        if (!gameover) {
+            if (event.key === 'ArrowLeft') {
+                movePlayer('left');
+            } else if (event.key === 'ArrowRight') {
+                movePlayer('right');
+            }
+        }
+    });
+
+    function checkGamepadState() {
+        let gamepad = navigator.getGamepads()[0]; // Assuming only one gamepad connected
+        if (gamepad && !gameover) {
+            let axes = gamepad.axes;
+            let leftStickX = axes[0];
+            if (leftStickX < -0.7) {
+                player.x -= 7;
+            } else if (leftStickX > 0.7) {
+                player.x += 7;
+            }
+        }
+    }
+
+    // Function to detect collision between player and enemy
+    function detectCollision(player, enemy) {
+        return player.x < enemy.x + enemySize &&
+               player.x + player.width > enemy.x &&
+               player.y < enemy.y + enemySize &&
+               player.y + player.height > enemy.y;
+    }
+
+    // Function to detect collision between player and borders
+    function detectBorderCollision() {
+        if (player.x < 0) {
+            player.x = 0;
+        } else if (player.x + player.width > canvas.width) {
+            player.x = canvas.width - player.width;
+        }
+    }
+
+    // Function to update game state
+    function update() {
+        if (!gameover) {
+            detectBorderCollision(); // Check for border collisions
+            // Move enemies
+            for (let i = 0; i < enemies.length; i++) {
+                enemies[i].y += 10;
+                if (detectCollision(player, enemies[i])) {
+                    gameover = true;
+                    showGameOverScreen();
+                    return; // Exit the function early
+                }
+            }
+
+            // Spawn new enemies
+            if (enemies.length < 10 && Math.random() < 0.1) {
+                let x = Math.floor(Math.random() * (canvas.width - enemySize));
+                let y = 0;
+                enemies.push({ x: x, y: y });
+            }
+
+            // Remove enemies that are out of bounds
+            enemies = enemies.filter(function(enemy) {
+                return enemy.y < canvas.height;
+            });
+
+            // Update score
+            score += enemies.length;
+            if (score % 10 === 0 && score !== 0) {
+                speed += 1; // Decreased speed increment
+            }
+        }
+    }
+
+    // Function to show game over screen
+    function showGameOverScreen() {
+        // Show game over screen
+        gameOverText.textContent = 'Game Over! Your score was: ' + score;
+        gameOverScreen.style.display = 'block';
+    }
+
+    // Function to restart the game
+    function restartGame() {
+        player.x = 400;
+        enemies = [];
+        score = 0;
+        speed = 20; // Reset speed
+        gameover = false;
+        gameOverScreen.style.display = 'none';
+        startScreen.style.display = 'none';
+        gameLoop();
+    }
+
+    // Function to start the game
+    function startGame() {
+        startScreen.style.display = 'none';
+        gameover = false;
+        gameLoop();
+    }
+
+    // Function to render game objects
+    function draw() {
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw player
+        ctx.fillStyle = 'blue';
+        ctx.fillRect(player.x, player.y, player.width, player.height);
+
+        // Draw enemies
+        ctx.fillStyle = 'red';
+        for (let i = 0; i < enemies.length; i++) {
+            ctx.fillRect(enemies[i].x, enemies[i].y, enemySize, enemySize);
+        }
+
+        // Draw score
+        ctx.fillStyle = 'black';
+        ctx.font = '24px Arial';
+        ctx.fillText('Score: ' + score, canvas.width - 120, 30);
+    }
+
+    // Game loop
+    function gameLoop() {
+        update();
+        draw();
+        if (!gameover) {
+            setTimeout(gameLoop, 1000 / speed);
+        }
+    }
+
+    // Show start screen initially
+    startScreen.style.display = 'block';
+</script>
+
+
+</body>
+</html>
