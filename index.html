@@ -65,6 +65,16 @@
     // Start screen
     let startScreen = document.getElementById('startScreen');
 
+    // Function to move player with borders
+    function movePlayer(direction) {
+        const moveSpeed = 10; // Decreased movement speed
+        if (direction === 'left') {
+            player.x = Math.max(0, player.x - moveSpeed); // Ensure player doesn't move beyond the left border
+        } else if (direction === 'right') {
+            player.x = Math.min(canvas.width - player.width, player.x + moveSpeed); // Ensure player doesn't move beyond the right border
+        }
+    }
+
     // Event listener for Xbox controller input
     window.addEventListener('gamepadconnected', function(e) {
         let gamepad = e.gamepad;
@@ -78,9 +88,9 @@
     document.addEventListener('keydown', function(event) {
         if (!gameover) {
             if (event.key === 'ArrowLeft') {
-                player.x -= 10; // Decreased movement speed
+                movePlayer('left');
             } else if (event.key === 'ArrowRight') {
-                player.x += 10; // Decreased movement speed
+                movePlayer('right');
             }
         }
     });
@@ -106,9 +116,19 @@
                player.y + player.height > enemy.y;
     }
 
+    // Function to detect collision between player and borders
+    function detectBorderCollision() {
+        if (player.x < 0) {
+            player.x = 0;
+        } else if (player.x + player.width > canvas.width) {
+            player.x = canvas.width - player.width;
+        }
+    }
+
     // Function to update game state
     function update() {
         if (!gameover) {
+            detectBorderCollision(); // Check for border collisions
             // Move enemies
             for (let i = 0; i < enemies.length; i++) {
                 enemies[i].y += 10;
